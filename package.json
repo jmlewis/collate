@@ -1,0 +1,55 @@
+{
+  "name": "collate",
+  "preferGlobal": "true",
+  "version": "0.0.1",
+  "author": "Sharing State <team@sharingstate.com>",
+  "description": "a .js/.coffee and .css/.less collater",
+  "contributors": [ 
+    {
+      "name": "Joshua M. Lewis",
+      "email": "josh@sharingstate.com"
+    },
+    {
+      "name": "Galen Wolfe-Pauly",
+      "email": "galen@sharingstate.com"
+    }
+  ],
+  "bin": {
+    "collate": "./bin/collate"
+  },
+  "scripts": {
+    "start": "node ./bin/collate",
+    "test": "vows --spec --isolate"
+  },
+  "main": "./lib/collate",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jmlewis/collate.git"
+  },
+  "keywords": [
+    "javascript",
+    "coffeescript",
+    "css",
+    "less",
+    "minify",
+    "uglify",
+    "asset management"
+  ],
+  "dependencies": {
+  	"async": "0.1.x",
+  	"uglify-js": "1.2.x",
+  	"less": "1.3.x",
+  	"coffee-script": "1.2.x",
+  	"optimist": "0.3.x"
+  },
+  "noAnalyze": true,
+  "devDependencies": {
+    "vows": "0.5.x"
+  },
+  "bundleDependencies": [
+  ],
+  "license": "MIT",
+  "engine": {
+    "node": ">=0.6"
+  }
+}
