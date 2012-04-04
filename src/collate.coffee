@@ -111,7 +111,7 @@ class _Collator
 		ws = fs.createWriteStream @target
 		for compiledSource in @_compiledSources
 			ws.write compiledSource
-			if @target.indexOf '.js' isnt -1 # Close out javascript lines appropriately
+			if @target.indexOf('.js') isnt -1 # Close out javascript lines appropriately
 				ws.write ';\n'
 		ws.end()
 		callback null
