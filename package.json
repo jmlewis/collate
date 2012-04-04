@@ -1,6 +1,6 @@
 {
   "name": "collate",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "author": "Sharing State <team@sharingstate.com>",
   "description": "a .js/.coffee and .css/.less collater",
   "contributors": [ 
@@ -48,7 +48,7 @@
   "bundleDependencies": [
   ],
   "license": "MIT",
-  "engine": {
+  "engines": {
     "node": ">=0.6"
   }
 }
