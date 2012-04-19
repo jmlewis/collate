@@ -31,8 +31,9 @@ class _Collator
 
 	collate: =>
 		async.series [@_compileSources, @_writeTarget], (err, results) =>
-			console.log err if err
-			console.log "#{(new Date).toLocaleTimeString()} - collated #{path.basename @target}"
+			console.log "#{(new Date).toLocaleTimeString()} - collated #{path.basename @target}" unless err
+			if err and err isnt 'compilation error'
+				console.log err
 			if @options.watch
 				@_rewatch()
 
@@ -77,7 +78,11 @@ class _Collator
 		compress = @options.compress
 	
 		uglify = (js) ->
-			ast = jsp.parse js
+			try
+				ast = jsp.parse js
+			catch e
+				console.log "In #{path.basename source}, line #{e.line}, col #{e.col} - #{e.message}"
+				return null
 			ast = pro.ast_mangle ast
 			ast = pro.ast_squeeze ast
 			return pro.gen_code(ast)
@@ -92,8 +97,12 @@ class _Collator
 					result = uglify result if compress
 					_callback null, result
 				when '.coffee'
-					result = coffee.compile result
-					result = uglify result if compress
+					try
+						result = coffee.compile result
+					catch e
+						console.log "In #{path.basename source} - #{e}"
+						result = null
+					result = uglify result if compress and result
 					_callback null, result
 				when '.css', '.less'
 # Less can be finicky about finding @imported files
@@ -101,19 +110,30 @@ class _Collator
 						filename: source
 						paths: [path.dirname source]
 						
-					new (less.Parser)(less_options).parse result, (err, tree) ->
-						result = tree.toCSS { compress: compress } unless err
-						_callback err, result
+					new (less.Parser)(less_options).parse result, (e, tree) ->
+						if e
+							console.log "In #{path.basename source}, line #{e.line}, col #{e.column} - #{e.type}: #{e.message}"
+							result = null
+						else
+							try # Can throw errors for missing imports, etc.
+								result = tree.toCSS { compress: compress }
+							catch e
+								console.log "In #{path.basename source}, line #{e.line}, col #{e.column} - #{e.type}: #{e.message}"
+								result = null
+						_callback null, result
 	
 		async.waterfall [read, compile], callback
 		
 	_writeTarget: (callback) =>
-		ws = fs.createWriteStream @target
-		for compiledSource in @_compiledSources
-			ws.write compiledSource
-			if @target.indexOf('.js') isnt -1 # Close out javascript lines appropriately
-				ws.write ';\n'
-		ws.end()
-		callback null
+		if @_compiledSources.indexOf(null) is -1 # No compilation errors
+			ws = fs.createWriteStream @target
+			for compiledSource in @_compiledSources
+				ws.write compiledSource
+				if @target.indexOf('.js') isnt -1 # Close out javascript lines appropriately
+					ws.write ';\n'
+			ws.end()
+			callback null
+		else
+			callback 'compilation error'
 	
 module.exports = new Collate

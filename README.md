@@ -34,6 +34,5 @@ The module syntax is
 
 ## Todo
 
- * Better handling of syntax errors
  * Option to gzip
  * Don't reminify already-minified source
