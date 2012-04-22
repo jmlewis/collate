@@ -17,7 +17,7 @@
     "collate": "./bin/collate"
   },
   "scripts": {
-    "start": "node ./bin/collate",
+    "start": "node ./bin/collate"
   },
   "main": "./lib/collate",
   "repository": {
