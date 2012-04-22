@@ -7,6 +7,7 @@ jsp = require('uglify-js').parser
 pro = require('uglify-js').uglify
 
 wait = (milliseconds, func) -> setTimeout func, milliseconds
+compilationError = 'compilation error'
 
 class Collate
 	collate: (target, sources, options) ->
@@ -26,20 +27,20 @@ class _Collator
 		@target = path.resolve @target
 		@sources = (path.resolve source for source in @sources)
 
-		if @options.watch
+		if @options.watch # Get baseline file metadata
 			async.map @sources, fs.stat, (err, stats) => @_stats = stats
 
 	collate: =>
 		async.series [@_compileSources, @_writeTarget], (err, results) =>
 			console.log "#{(new Date).toLocaleTimeString()} - collated #{path.basename @target}" unless err
-			if err and err isnt 'compilation error'
+			if err and err isnt compilationError
 				console.log err
 			if @options.watch
 				@_rewatch()
 
 	_watchEvent: (event, filename) =>
 		clearTimeout @_watchTimeout
-		@_watchTimeout = wait 25, => # Catch multiple near-simultaneous events only once
+		@_watchTimeout = wait 100, => # Catch multiple near-simultaneous watch events only once
 			watcher.close() for watcher in @_watchers # Kill the existing watchers once one goes off
 			async.map @sources, fs.stat, (err, stats) => # Get the new stats
 				for stat, i in stats
@@ -59,20 +60,24 @@ class _Collator
 
 	_compileSources: (callback) =>
 		if not @_compiledSources # First compile, so compile everything
-			async.map @sources, @_compileSource, (err, results) =>
-				@_compiledSources = results
-				callback err
-		else # Watch event, just compile what's changed
-			compileIfChanged = (i, _callback) =>
-				if not @_compiledSources[i]?
-					@_compileSource @sources[i], (err, result) =>
+			@_compiledSources = []
+			for source, i in @sources
+				@_compiledSources[i] = null
+		compileIfChanged = (i, _callback) =>
+			if not @_compiledSources[i]?
+				@_compileSource @sources[i], (err, result) =>
+					if result
 						@_compiledSources[i] = result
-						_callback null
-				else
+					else
+						@_compiledSources[i] = compilationError
 					_callback null
+			else
+				_callback null
 
-			async.map [0...@_compiledSources.length], compileIfChanged, callback
+		async.map [0...@_compiledSources.length], compileIfChanged, callback
 
+# This function never calls back with an error, which allows multiple errors to be logged if necessary.
+# The errors all get sopped up by _writeTarget below when it checks for null compiled sources.
 	_compileSource: (source, callback) =>
 		ext = path.extname source
 		compress = @options.compress
@@ -111,29 +116,32 @@ class _Collator
 						paths: [path.dirname source]
 						
 					new (less.Parser)(less_options).parse result, (e, tree) ->
-						if e
+						logLessErr = (e) ->
 							console.log "In #{path.basename source}, line #{e.line}, col #{e.column} - #{e.type}: #{e.message}"
+						
+						if e
+							logLessErr e
 							result = null
 						else
 							try # Can throw errors for missing imports, etc.
 								result = tree.toCSS { compress: compress }
 							catch e
-								console.log "In #{path.basename source}, line #{e.line}, col #{e.column} - #{e.type}: #{e.message}"
+								logLessErr e
 								result = null
 						_callback null, result
 	
 		async.waterfall [read, compile], callback
 		
 	_writeTarget: (callback) =>
-		if @_compiledSources.indexOf(null) is -1 # No compilation errors
+		if @_compiledSources.indexOf(compilationError) is -1 # No compilation errors
 			ws = fs.createWriteStream @target
 			for compiledSource in @_compiledSources
 				ws.write compiledSource
-				if @target.indexOf('.js') isnt -1 # Close out javascript lines appropriately
+				if @target.indexOf('.js') isnt -1 and @options.compress # Close out minified javascript lines appropriately
 					ws.write ';\n'
 			ws.end()
 			callback null
 		else
-			callback 'compilation error'
+			callback compilationError
 	
 module.exports = new Collate
