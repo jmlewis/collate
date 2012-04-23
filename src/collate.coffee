@@ -19,16 +19,21 @@ class Collate
 
 class _Collator
 	constructor: (@target, @sources, @options) ->
-# Prepend with baseDir if it exists
-		if options.basedir?
+		
+		if options.basedir?	# Prepend with baseDir if it exists
 			@target = @options.basedir + @target
 			@sources = (@options.basedir + source for source in @sources)
-# Make all paths absolute
+		
+		# Make all paths absolute
 		@target = path.resolve @target
 		@sources = (path.resolve source for source in @sources)
 
-		if @options.watch # Get baseline file metadata
-			async.map @sources, fs.stat, (err, stats) => @_stats = stats
+		async.map @sources, fs.stat, (err, stats) => # Get baseline file metadata/check for existence
+			if err
+				console.log err
+				@options.watch = false # Don't watch if files don't exist
+			else
+				@_stats = stats
 
 	collate: =>
 		async.series [@_compileSources, @_writeTarget], (err, results) =>
