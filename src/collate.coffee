@@ -5,6 +5,7 @@ coffee = require 'coffee-script'
 less = require 'less'
 jsp = require('uglify-js').parser
 pro = require('uglify-js').uglify
+EventEmitter = require('events').EventEmitter
 
 wait = (milliseconds, func) -> setTimeout func, milliseconds
 compilationError = 'compilation error'
@@ -16,8 +17,9 @@ class Collate
 
 		collator = new _Collator target, sources, options
 		collator.collate()
+		return collator
 
-class _Collator
+class _Collator extends EventEmitter
 	constructor: (@target, @sources, @options) ->
 		
 		if options.basedir?	# Prepend with baseDir if it exists
@@ -37,8 +39,12 @@ class _Collator
 
 	collate: =>
 		async.series [@_compileSources, @_writeTarget], (err, results) =>
-			console.log "#{(new Date).toLocaleTimeString()} - collated #{path.basename @target}" unless err
+			if !err
+				msg = "collated #{path.basename @target}"
+				console.log "#{(new Date).toLocaleTimeString()} - " + msg
+				@emit 'collate', msg
 			if err and err isnt compilationError
+				@emit 'error',err
 				console.log err
 			if @options.watch
 				@_rewatch()
@@ -51,7 +57,9 @@ class _Collator
 				for stat, i in stats
 					prev = @_stats[i]
 					if stat.size isnt prev.size or stat.mtime.getTime() isnt prev.mtime.getTime()
-						console.log "#{(new Date).toLocaleTimeString()} - #{path.basename @sources[i]} changed"
+						msg = "#{path.basename @sources[i]} changed"
+						@emit 'change',msg
+						console.log "#{(new Date).toLocaleTimeString()} - "+msg
 						@_compiledSources[i] = null # Erase compiled source for the file that has changed
 						@_stats[i] = stat
 				if @_compiledSources.indexOf(null) isnt -1
