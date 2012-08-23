@@ -1,3 +1,4 @@
+[![build status](https://secure.travis-ci.org/jmlewis/collate.png)](http://travis-ci.org/jmlewis/collate)
 # Collate
 
 Collate is a Node module for concatenating and minifying scripts and stylesheets. Collate works with JavaScript/CoffeeScript and CSS/LESS. The command line utility can watch for changes and automatically recollate. Collate is a project of [State Design](https://www.sharingstate.com/).
