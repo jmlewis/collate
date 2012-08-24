@@ -30,7 +30,7 @@ From the command line:
 
 The module syntax is
 	
-	Collate.collate([target], [sources], [options]);
+	Collate.collate([target], [sources], [options], [callback]);
 
 ## Todo
 
