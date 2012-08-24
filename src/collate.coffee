@@ -10,19 +10,19 @@ wait = (milliseconds, func) -> setTimeout func, milliseconds
 compilationError = 'compilation error'
 
 class Collate
-	collate: (target, sources, options) ->
+	collate: (target, sources, options, callback) ->
 		options ?= {}
 		options.compress ?= true
 
-		collator = new _Collator target, sources, options
+		collator = new _Collator target, sources, options, callback
 		collator.collate()
 
 class _Collator
-	constructor: (@target, @sources, @options) ->
+	constructor: (@target, @sources, @options, @callback) ->
 		
 		if options.basedir?	# Prepend with baseDir if it exists
-			@target = @options.basedir + @target
-			@sources = (@options.basedir + source for source in @sources)
+			@target = path.join @options.basedir, @target
+			@sources = (path.join @options.basedir, source for source in @sources)
 		
 		# Make all paths absolute
 		@target = path.resolve @target
@@ -40,6 +40,8 @@ class _Collator
 			console.log "#{(new Date).toLocaleTimeString()} - collated #{path.basename @target}" unless err
 			if err and err isnt compilationError
 				console.log err
+			if @callback?
+				@callback err
 			if @options.watch
 				@_rewatch()
 
