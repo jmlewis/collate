@@ -5,7 +5,7 @@ var fs   = require('fs');
 var lib = path.join(path.dirname(fs.realpathSync(__filename)), '../lib');
 
 var argv = require('optimist')
-	.boolean(['c', 'w'])
+	.boolean(['c', 'w', 'v'])
 	.usage('Usage: collate [opts] [list of source files to collate]\nExample: collate -t styles.css -w -c one.css two.css')
 	.describe('t', 'Target for collated output.')
 	.alias('t', 'target')
@@ -13,6 +13,8 @@ var argv = require('optimist')
 	.alias('d', 'basedir')
 	.describe('c', 'Minify the output.')
 	.alias('c', 'compress')
+	.describe('v', 'Verbose - source changes and collate results print to STDOUT.')
+	.alias('v', 'verbose')
 	.describe('w', 'Watch for changes (process will run until ^C).')
 	.alias('w', 'watch')
     .demand(['t', 1])
