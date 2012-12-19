@@ -23,10 +23,11 @@ From the command line:
 	
 ## Options
 
-	-t, --target    Target for collated output.                     [required]
-	-d, --basedir   Base dir (relative to cwd).                   				[default: '.']
-	-c, --compress  Minify the output.                              [boolean]	[default: true]
-	-w, --watch     Watch for changes (process will run until ^C).  [boolean]	[default: false]
+	  -t, --target    Target for collated output.                                    [required]
+	  -d, --basedir   Base dir (relative to cwd).                                  
+	  -c, --compress  Minify the output.                                             [boolean]
+	  -v, --verbose   Verbose - source changes and collate results print to STDOUT.  [boolean]
+	  -w, --watch     Watch for changes (process will run until ^C).                 [boolean]
 
 The module syntax is
 	
