@@ -1,6 +1,6 @@
 {
   "name": "collate",
-  "version": "0.0.5",
+  "version": "0.0.7",
   "author": "Sharing State <team@sharingstate.com>",
   "description": "a .js/.coffee and .css/.less collater",
   "contributors": [ 

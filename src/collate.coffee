@@ -11,20 +11,21 @@ wait = (milliseconds, func) -> setTimeout func, milliseconds
 compilationError = 'compilation error'
 
 class Collate
-	collate: (target, sources, options) ->
+	collate: (target, sources, options, callback) ->
 		options ?= {}
 		options.compress ?= true
+		options.verbose ?= false
 
-		collator = new _Collator target, sources, options
+		collator = new _Collator target, sources, options, callback
 		collator.collate()
 		return collator
 
 class _Collator extends EventEmitter
-	constructor: (@target, @sources, @options) ->
+	constructor: (@target, @sources, @options, @callback) ->
 		
 		if options.basedir?	# Prepend with baseDir if it exists
-			@target = @options.basedir + @target
-			@sources = (@options.basedir + source for source in @sources)
+			@target = path.join @options.basedir, @target
+			@sources = (path.join @options.basedir, source for source in @sources)
 		
 		# Make all paths absolute
 		@target = path.resolve @target
@@ -32,20 +33,21 @@ class _Collator extends EventEmitter
 
 		async.map @sources, fs.stat, (err, stats) => # Get baseline file metadata/check for existence
 			if err
-				console.log err
+				console.error err
 				@options.watch = false # Don't watch if files don't exist
 			else
 				@_stats = stats
 
 	collate: =>
 		async.series [@_compileSources, @_writeTarget], (err, results) =>
-			if !err
-				msg = "collated #{path.basename @target}"
-				console.log "#{(new Date).toLocaleTimeString()} - " + msg
+			if @options.verbose and not err
+				console.log "#{(new Date).toLocaleTimeString()} - collated #{path.basename @target}"
 				@emit 'collate', msg
 			if err and err isnt compilationError
 				@emit 'error',err
-				console.log err
+				console.error err
+			if @callback?
+				@callback err
 			if @options.watch
 				@_rewatch()
 
@@ -57,9 +59,9 @@ class _Collator extends EventEmitter
 				for stat, i in stats
 					prev = @_stats[i]
 					if stat.size isnt prev.size or stat.mtime.getTime() isnt prev.mtime.getTime()
-						msg = "#{path.basename @sources[i]} changed"
-						@emit 'change',msg
-						console.log "#{(new Date).toLocaleTimeString()} - "+msg
+						if @options.verbose
+							@emit 'change',msg
+							console.log "#{(new Date).toLocaleTimeString()} - #{path.basename @sources[i]} changed"
 						@_compiledSources[i] = null # Erase compiled source for the file that has changed
 						@_stats[i] = stat
 				if @_compiledSources.indexOf(null) isnt -1
@@ -99,7 +101,7 @@ class _Collator extends EventEmitter
 			try
 				ast = jsp.parse js
 			catch e
-				console.log "In #{path.basename source}, line #{e.line}, col #{e.col} - #{e.message}"
+				console.error "In #{path.basename source}, line #{e.line}, col #{e.col} - #{e.message}"
 				return null
 			ast = pro.ast_mangle ast
 			ast = pro.ast_squeeze ast
@@ -118,7 +120,7 @@ class _Collator extends EventEmitter
 					try
 						result = coffee.compile result
 					catch e
-						console.log "In #{path.basename source} - #{e}"
+						console.error "In #{path.basename source} - #{e}"
 						result = null
 					result = uglify result if compress and result
 					_callback null, result
@@ -130,7 +132,7 @@ class _Collator extends EventEmitter
 						
 					new (less.Parser)(less_options).parse result, (e, tree) ->
 						logLessErr = (e) ->
-							console.log "In #{path.basename source}, line #{e.line}, col #{e.column} - #{e.type}: #{e.message}"
+							console.error "In #{path.basename source}, line #{e.line}, col #{e.column} - #{e.type}: #{e.message}"
 						
 						if e
 							logLessErr e
