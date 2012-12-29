@@ -40,9 +40,10 @@ class _Collator extends EventEmitter
 
 	collate: =>
 		async.series [@_compileSources, @_writeTarget], (err, results) =>
-			if @options.verbose and not err
-				console.log "#{(new Date).toLocaleTimeString()} - collated #{path.basename @target}"
+			if not err
+				msg = "#{(new Date).toLocaleTimeString()} - collated #{path.basename @target}"
 				@emit 'collate', msg
+				console.log(msg) if @options.verbose
 			if err and err isnt compilationError
 				@emit 'error',err
 				console.error err
@@ -59,9 +60,9 @@ class _Collator extends EventEmitter
 				for stat, i in stats
 					prev = @_stats[i]
 					if stat.size isnt prev.size or stat.mtime.getTime() isnt prev.mtime.getTime()
-						if @options.verbose
-							@emit 'change',msg
-							console.log "#{(new Date).toLocaleTimeString()} - #{path.basename @sources[i]} changed"
+						msg = "#{(new Date).toLocaleTimeString()} - #{path.basename @sources[i]} changed"
+						@emit 'change',msg
+						console.log(msg) if @options.verbose
 						@_compiledSources[i] = null # Erase compiled source for the file that has changed
 						@_stats[i] = stat
 				if @_compiledSources.indexOf(null) isnt -1
